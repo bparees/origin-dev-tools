@@ -138,20 +138,24 @@ module OpenShift
         end
       end
 
-      image_packages.each do |image_name,packages|
-        puts "Installing #{packages.join(", ")} into image #{image_name}..."
-        cmd = ""
-        packages.each do |package_name|
-          cmd += "rpm -Uvh --force /tmp/tito_docker/#{package_name}/*.rpm || yum update -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken || yum install -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken; "
+      build_threads = []
+      image_packages.each do |image_name, packages|
+        build_threads << Thread.new do
+          puts "Installing #{packages.join(", ")} into image #{image_name}..."
+          cmd = ""
+          packages.each do |package_name|
+            cmd += "rpm -Uvh --force /tmp/tito_docker/#{package_name}/*.rpm || yum update -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken || yum install -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken; "
+          end
+          cidfile = "/tmp/tito/update_container_#{image_name}.cid"
+          result = run("docker run --cidfile #{cidfile} -i -t -v /tmp/tito_docker:/tmp/tito_docker #{image_name}:latest /bin/bash -c \"#{cmd}\"")
+          update_container_id = `cat #{cidfile}`
+          run("docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
+          run("docker rm #{update_container_id}")
+          run("rm -f #{cidfile}")
+          exit 1 unless result
         end
-        cidfile = "/tmp/tito/update_container.cid"
-        result = run("docker run --cidfile #{cidfile} -i -t -v /tmp/tito_docker:/tmp/tito_docker #{image_name}:latest /bin/bash -c \"#{cmd}\"")
-        update_container_id = `cat #{cidfile}`
-        run("docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
-        run("docker rm #{update_container_id}")
-        run("rm -f #{cidfile}")
-        exit 1 unless result
       end
+      build_threads.each { |t| t.join }
     end
 
     # Avoid using this when possible in favor of install_build_packages_in_containers
@@ -160,7 +164,7 @@ module OpenShift
       images_for_package(package_name).each do |image_name|
         puts "Installing #{package_name} into image #{image_name}..."
         cmd = "rpm -Uvh --force /tmp/tito_docker/#{package_name}/*.rpm || yum install -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken || yum install -y /tmp/tito_docker/#{package_name}/*.rpm --skip-broken"
-        cidfile = "/tmp/tito/update_container.cid"
+        cidfile = "/tmp/tito/update_container_#{image_name}.cid"
         result = run("docker run --cidfile #{cidfile} -i -t -v /tmp/tito_docker:/tmp/tito_docker #{image_name}:latest /bin/bash -c \"#{cmd}\"")
         update_container_id = `cat #{cidfile}`
         run("docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
