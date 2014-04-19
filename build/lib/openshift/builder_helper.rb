@@ -245,12 +245,13 @@ sudo bash -c \"mkdir -p /tmp/rhc/junit\"
       end
     end
 
-    def sync_repo(repo_name, hostname, remote_repo_parent_dir="/root", ssh_user="root", verbose=false)
+    def sync_repo(repo_name, repo_dir, hostname, remote_repo_parent_dir="/root", ssh_user="root", verbose=false)
+      tc = nil
       begin
-        temp_commit
+        tc = temp_commit(repo_dir)
 
         # Get the current branch
-        branch = get_branch
+        branch = get_branch(repo_dir)
 
         puts "Synchronizing local changes from branch #{branch} for repo #{repo_name} from #{File.basename(FileUtils.pwd)}..."
 
@@ -260,6 +261,7 @@ sudo bash -c \"mkdir -p /tmp/rhc/junit\"
           #######
           # Start shell code
           export GIT_SSH=#{GIT_SSH_PATH}
+          cd #{repo_dir}
           #{branch == 'origin/master' ? "git push -q #{ssh_user}@#{hostname}:#{remote_repo_parent_dir}/#{repo_name}-bare master:master --tags --force; " : ''}
           git push -q #{ssh_user}@#{hostname}:#{remote_repo_parent_dir}/#{repo_name}-bare #{branch}:master --tags --force
 
@@ -268,15 +270,13 @@ sudo bash -c \"mkdir -p /tmp/rhc/junit\"
           SHELL
 
       ensure
-        reset_temp_commit
+        reset_temp_commit(tc)
       end
     end
 
     def sync_sibling_repo(repo_name, repo_dir, hostname, remote_repo_parent_dir="/root", ssh_user="root")
       exists = File.exists?(repo_dir)
-      inside(repo_dir) do
-        sync_repo(repo_name, hostname, remote_repo_parent_dir, ssh_user)
-      end if exists
+      sync_repo(repo_name, repo_dir, hostname, remote_repo_parent_dir, ssh_user) if exists
       exists
     end
 
@@ -294,16 +294,19 @@ sudo bash -c \"mkdir -p /tmp/rhc/junit\"
     def sync_available_sibling_repos(hostname, remote_repo_parent_dir="/root", ssh_user="root")
       working_dirs = ''
       clone_commands = ''
+      sync_threads = []
       SIBLING_REPOS.each do |repo_name, repo_dirs|
-        repo_dirs.each do |repo_dir|
-
-          if sync_sibling_repo(repo_name, repo_dir, hostname, remote_repo_parent_dir, ssh_user)
-            working_dirs += "#{repo_name} "
-            clone_commands += "git clone #{repo_name}-bare #{repo_name}; "
-            break # just need the first repo found
+        sync_threads << Thread.new do
+          repo_dirs.each do |repo_dir|
+            if sync_sibling_repo(repo_name, repo_dir, hostname, remote_repo_parent_dir, ssh_user)
+              working_dirs += "#{repo_name} "
+              clone_commands += "git clone #{repo_name}-bare #{repo_name}; "
+              break # just need the first repo found
+            end
           end
         end
       end
+      sync_threads.each {|t| t.join}
       return clone_commands, working_dirs
     end
 
@@ -492,37 +495,37 @@ sudo bash -c \"mkdir -p /tmp/rhc/junit\"
       @docker_only_packages
     end
 
-    def temp_commit
+    def temp_commit(repo_dir='.')
       # Warn on uncommitted changes
-      `git diff-index --quiet HEAD`
-
+      `cd #{repo_dir}; git diff-index --quiet HEAD`
+      tc = nil
       if $? != 0
         # Perform a temporary commit
         puts "Creating temporary commit to build"
 
         begin
-          `git commit -m "Temporary commit #1 - index changes"`
+          `cd #{repo_dir}; git commit -m "Temporary commit #1 - index changes"`
         ensure
-          (@temp_commit ||= []).push("git reset --soft HEAD^") if $? == 0
+          (tc ||= []).push("cd #{repo_dir}; git reset --soft HEAD^") if $? == 0
         end
 
         begin
-          `git commit -a -m "Temporary commit #2 - non-index changes"`
+          `cd #{repo_dir}; git commit -a -m "Temporary commit #2 - non-index changes"`
         ensure
-          (@temp_commit ||= []).push("git reset --mixed HEAD^") if $? == 0
+          (tc ||= []).push("cd #{repo_dir}; git reset --mixed HEAD^") if $? == 0
         end
 
-        puts @temp_commit ? "No-op" : "Done"
+        puts tc ? "No-op" : "Done"
       end
+      tc
     end
 
-    def reset_temp_commit
-      if @temp_commit
+    def reset_temp_commit(tc)
+      if tc
         puts "Undoing temporary commit..."
-        while undo = @temp_commit.pop
+        while undo = tc.pop
           `#{undo}`
         end
-        @temp_commit = nil
         puts "Done."
       end
     end
