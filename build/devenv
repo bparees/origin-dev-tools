@@ -246,7 +246,7 @@ popd
         FileUtils.rm_rf "/root/origin-rpms"
         FileUtils.rm_rf "/data/origin-srpms"
         FileUtils.mkdir_p "/root/origin-rpms"
-        FileUtils.mkdir_p "/data/origin-srpms"        
+        FileUtils.mkdir_p "/data/origin-srpms"
         File.open("/etc/yum.repos.d/openshift-origin.repo", 'w') do |out|
           out << %{
 [openshift-origin]
@@ -346,7 +346,7 @@ retries = 0
 
     desc "tag_for_release", "Tags all packages that have new commits"
     method_option :base_os, :default => nil, :desc => "Operating system for Origin (fedora or rhel)"
-    method_option :verbose, :type => :boolean, :default => true, :desc => "Enable verbose logging"    
+    method_option :verbose, :type => :boolean, :default => true, :desc => "Enable verbose logging"
     def tag_for_release
       options.verbose? ? log.level = Logger::DEBUG : log.level = Logger::ERROR
       base_os = guess_os(options.base_os)
@@ -356,9 +356,9 @@ retries = 0
       orig_branches = checkout_branch(branch, options.verbose?)
 
       #Fail if there are any uncomitted changes
-      SIBLING_REPOS.each do |repo_name, repo_dirs| 
-        repo_dirs.each do |repo_dir| 
-          if File.exists?(repo_dir) 
+      SIBLING_REPOS.each do |repo_name, repo_dirs|
+        repo_dirs.each do |repo_dir|
+          if File.exists?(repo_dir)
             inside(repo_dir) do 
               raise "You have uncommited changes in #{repo_dir}, cannot bump versions" unless run('git diff --quiet')
             end
