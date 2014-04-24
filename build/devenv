@@ -165,7 +165,7 @@ popd
       end
 
       run "wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo"
-      run "rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key"      
+      run "rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key"
       run "yum install -y tito make tig mlocate bash-completion activemq-client"
 
       old_install_required_packages
@@ -273,7 +273,7 @@ retries = 0
     end
 
     desc "release_build", "Creates release packages"
-    method_option :verbose, :type => :boolean, :default => true, :desc => "Enable verbose logging"    
+    method_option :verbose, :type => :boolean, :default => true, :desc => "Enable verbose logging"
     method_option :base_os, :default => nil, :desc => "Operating system for Origin (fedora or rhel)"
     method_option :ssh_user, :type => :string, :default => "root", :desc => "User to use when ssh'ing to build machine"
     def release_build
@@ -1112,7 +1112,7 @@ sudo bash -c \"service named restart\"
         puts "Restarting services..."
         out, ret = ssh(hostname, restart_services_commands.join("\n"), 60 * 5, true, 1, ssh_user)
         if ret != 0
-          print_and_exit(ret, out) 
+          print_and_exit(ret, out)
         else
           print_highlighted_output( "Origin services restart", out)
         end
