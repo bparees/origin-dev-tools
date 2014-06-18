@@ -607,8 +607,22 @@ END
 
     def update_express_server(instance)
       public_ip = instance.dns_name
+
       puts "Updating ~/.openshift/express.conf libra_server entry with public ip = #{public_ip}"
       `sed -i -e 's,^libra_server.*,libra_server=#{public_ip},' ~/.openshift/express.conf`
+
+      path = File.join(File.expand_path('~'), '.openshift', 'servers.yml')
+      if File.exists?(path)
+        puts "Updating #{path} server entry with public ip = #{public_ip}"
+
+        servers = (YAML.load_file(path) || [])
+        if s = servers.select{|i| i['server']['nickname'] == 'devenv'}.first
+          s['server']['hostname'] = public_ip
+        else
+          servers << {'server' => {'hostname' => public_ip, 'nickname' => 'devenv', 'use_authorization_tokens' => true, 'insecure' => true}}
+        end
+        File.open(path, 'w'){|c| c.puts servers.to_yaml}
+      end
     end
 
     def repo_path(dir='')
