@@ -284,6 +284,7 @@ module OpenShift
     method_option :verbose, :type => :boolean, :desc => "Enable verbose logging"
     method_option :express_server, :type => :boolean, :desc => "Set as express server in express.conf"
     method_option :ssh_config_verifier, :type => :boolean, :desc => "Set as verifier in .ssh/config"
+    method_option :ssh_config_alias, :required => false, :default => nil, :desc => "Specify an alias in .ssh/config"
     method_option :instance_type, :required => false, :desc => "Amazon machine type override (default '#{TYPE}')"
     method_option :region, :required => false, :desc => "Amazon region override (default us-east-1)"
     method_option :image_name, :required => false, :desc => "AMI ID or DEVENV name to launch"
@@ -324,6 +325,7 @@ module OpenShift
 
       update_api_file(instance) if options.ssh_config_verifier?
       update_ssh_config_verifier(instance) if options.ssh_config_verifier?
+      update_ssh_config_alias(instance, options.ssh_config_alias) if options.ssh_config_alias?
       update_express_server(instance) if options.express_server?
 
       home_dir=File.join(ENV['HOME'], '.openshiftdev/home.d')
