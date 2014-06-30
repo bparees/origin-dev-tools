@@ -564,6 +564,10 @@ DOMAIN_SUFFIX=dev.rhcloud.com
     end
 
     def update_ssh_config_verifier(instance)
+      update_ssh_config_alias(instance, 'verifier')
+    end
+
+    def update_ssh_config_alias(instance, ssh_alias)
       public_ip = instance.dns_name
       ssh_config = "~/.ssh/config"
       pem_file = File.expand_path("~/.ssh/libra.pem")
@@ -577,7 +581,7 @@ DOMAIN_SUFFIX=dev.rhcloud.com
       config_file = File.expand_path(ssh_config)
 
       config_template = <<END
-Host verifier
+Host #{ssh_alias}
   HostName 10.1.1.1
   User      root
   IdentityFile ~/.ssh/libra.pem
@@ -591,15 +595,15 @@ END
         file_mode = 'w'
         File.open(config_file, file_mode) { |f| f.write(config_template) }
       else
-        if not system("grep -n 'Host verifier' #{config_file}")
+        if not system("grep -n 'Host #{ssh_alias}' #{config_file}")
           file_mode = 'a'
           File.open(config_file, file_mode) { |f| f.write(config_template) }
         end
 
       end
 
-      line_num = `grep -n 'Host verifier' ~/.ssh/config`.chomp.split(':')[0]
-      puts "Updating ~/.ssh/config verifier entry with public ip = #{public_ip}"
+      line_num = `grep -n 'Host #{ssh_alias}' ~/.ssh/config`.chomp.split(':')[0]
+      puts "Updating ~/.ssh/config #{ssh_alias} entry with public ip = #{public_ip}"
       (1..4).each do |i|
         `sed -i -e '#{line_num.to_i + i}s,HostName.*,HostName #{public_ip},' ~/.ssh/config`
       end
