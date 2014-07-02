@@ -188,8 +188,9 @@ module OpenShift
 
     def remove_containers_for_image(image_name)
       # If it's a service, attempt to stop it to clean up any pid and cid files
-      if run("service #{image_name} status")
-        run("service #{image_name} stop")
+      service_name = DOCKER_IMG_TO_SERVICE_MAP[image_name]
+      if service_name && run("service #{service_name} status")
+        run("service #{service_name} stop")
       end
       # Forcefully kill any others that might be running
       if run("docker ps | grep #{image_name}")
