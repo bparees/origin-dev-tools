@@ -321,7 +321,7 @@ module OpenShift
     end
 
     def is_valid?(hostname, ssh_user="root")
-      @validation_output = ssh(hostname, ACCEPT_DEVENV_SCRIPT, 60, false, 1, ssh_user)
+      @validation_output = ssh(hostname, ACCEPT_DEVENV_SCRIPT, 120, false, 1, ssh_user)
       if @validation_output == "PASS"
         return true
       else
