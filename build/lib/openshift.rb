@@ -33,7 +33,7 @@ def get_branch(repo_dir='.')
 end
 
 def send_verified_email(image_id, image_name)
-  msg = <<END_OF_MESSAGE   
+  msg = <<END_OF_MESSAGE
 From: Jenkins <noreply@redhat.com>
 To: Libra Team <libra-devel@redhat.com>
 Subject: [Jenkins] DevEnv Image #{image_name} (#{image_id}) is QE Ready
