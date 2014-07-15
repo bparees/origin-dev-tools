@@ -414,51 +414,6 @@ module OpenShift
       image
     end
 
-    def send_old_instances_email(conn)
-      old_instances = []
-      conn.regions.each do |region|
-        AWS.memoize do
-          conn.instances.each do |i|
-            if (instance_status(i) == :running) && (i.tags["Name"] !~ /preserve/)
-              if Time.new - i.launch_time > 60*60*6
-                old_instances << i
-              end
-            end
-          end
-        end
-      end
-
-      formatted_instances = ""
-      old_instances.each do |i|
-        duration = "#{((Time.new - i.launch_time)/3600).to_i}h"
-        duration += (" " * (10 - duration.length))
-        formatted_instances += "#{duration}| #{i.tags["Name"]}\n"
-      end
-
-      msg = <<END_OF_MESSAGE
-From: Jenkins <noreply@redhat.com>
-To: Libra Team <libra-devel@redhat.com>
-Subject: Long Running Instances Report
-
-The following instances have been running for more than 24 hours:
-
-Hours     | Instance
-
-#{formatted_instances}
-
-Please terminate these instances if they are no longer needed.  Also 
-if your instances are consistently showing up on this list, please 
-ensure you aren't disabling charlie and that you aren't maintaining 
-a continuous ssh connection to the instance(s).
-
-END_OF_MESSAGE
-
-      Net::SMTP.start('localhost') do |smtp|
-        smtp.send_message msg, "noreply@redhat.com", "dmcphers@redhat.com"
-      end
-
-    end
-
     def terminate_flagged_instances(conn)
       AWS.memoize do
         conn.instances.each do |i|
