@@ -149,7 +149,7 @@ module OpenShift
           cidfile = "/tmp/tito/update_container_#{image_name}.cid"
           result = run("docker run --cidfile #{cidfile} -i -t -v /tmp/tito_docker:/tmp/tito_docker #{image_name}:latest /bin/bash -c \"#{cmd}\"")
           update_container_id = `cat #{cidfile}`
-          run("docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
+          run("docker wait #{update_container_id} && docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
           run("docker rm #{update_container_id}")
           run("rm -f #{cidfile}")
           exit 1 unless result
@@ -167,7 +167,7 @@ module OpenShift
         cidfile = "/tmp/tito/update_container_#{image_name}.cid"
         result = run("docker run --cidfile #{cidfile} -i -t -v /tmp/tito_docker:/tmp/tito_docker #{image_name}:latest /bin/bash -c \"#{cmd}\"")
         update_container_id = `cat #{cidfile}`
-        run("docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
+        run("docker wait #{update_container_id} && docker commit --run='{\"Cmd\": [\"#{image_name}-startup.sh\"]}' #{update_container_id} #{image_name}") if result
         run("docker rm #{update_container_id}")
         run("rm -f #{cidfile}")
         exit 1 unless result
