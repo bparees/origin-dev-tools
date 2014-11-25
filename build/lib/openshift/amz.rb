@@ -496,6 +496,14 @@ module OpenShift
 
     def stop_untagged_instances(conn)
       AWS.memoize do
+        named_instance = false
+        # Check that you have at least 1 named instance before continuing
+        conn.instances.each do |i|
+          if (instance_status(i) == :running || instance_status(i) == :stopped) && (i.tags['Name'] != nil) && !i.tags['Name'].empty?
+            named_instance = true
+            break
+          end
+        end
         conn.instances.each do |i|
           if (instance_status(i) == :running || instance_status(i) == :stopped) && (i.tags['Name'] == nil)
             tag_to_terminate(i)
@@ -504,7 +512,7 @@ module OpenShift
             log.info "Stopping untagged instance #{i.id} (#{i.tags["Name"]})"
             i.stop
           end
-        end
+        end if named_instance
       end
     end
 
