@@ -2,7 +2,7 @@ require 'pty'
 
 module OpenShift
   module SSH
-    SSH_CMD = "ssh 2> /dev/null -t -n -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no -i " + RSA
+    SSH_CMD = "ssh 2> /dev/null -t -t -n -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no -i " + RSA
     SCP_CMD = "scp 2> /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no -i " + RSA
 
     def ssh(hostname, cmd, timeout=60, return_exit_code=false, num_tries=1, user="root")
