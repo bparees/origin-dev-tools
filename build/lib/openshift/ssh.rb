@@ -38,9 +38,9 @@ module OpenShift
       end
     end
 
-    def ssh_pty(hostname, cmd, timeout=60, user="root")
+    def ssh_pty(hostname, cmd, timeout=60, user="root", force_ptty_allocation=false)
       log.debug "(ssh: hostname = #{hostname} timeout = #{timeout} / cmd = #{cmd})"
-      ssh_cmd = "#{SSH_CMD} -t #{user}@#{hostname} '#{cmd} 2>&1'"
+      ssh_cmd = "#{SSH_CMD} #{force_ptty_allocation ? '-t' : ''} #{user}@#{hostname} '#{cmd} 2>&1'"
       last_line = ''
       begin
         log.debug(ssh_cmd)
