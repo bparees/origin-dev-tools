@@ -60,6 +60,12 @@ module OpenShift
         filter("name", filter)
     end
 
+    def aws_users
+      setup_aws_config "~/.awscred"
+      iam = AWS::IAM.new
+      return iam.users
+    end
+
     def delete_detached_volumes(conn)
       volumes = conn.volumes.filter("status", "available")
       volumes.each do |volume|
